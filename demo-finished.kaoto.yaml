@@ -1,0 +1,44 @@
+- route:
+    id: route1
+    from:
+      uri: kamelet:chuck-norris-source/
+      parameters:
+        period: 1000
+      steps:
+      - log:
+          message: "Sending to Artemis: ${body}"
+      - to:
+          uri: amqp:queue:jokes
+- route:
+    id: route2
+    from:
+      uri: amqp:queue:jokes
+      steps:
+      - choice:
+          when:
+          - simple: "${body.startsWith('Chuck')}"
+            steps:
+            - log:
+                message: "Forwarding from Artemis to kafka:chuck: ${body}"
+            - to:
+                uri: kafka:chuck
+          otherwise:
+            steps:
+            - log:
+                message: "Forwarding from Artemis to kafka:other: ${body}"
+            - to:
+                uri: kafka:other
+- route:
+    id: route3
+    from:
+      uri: kafka:chuck
+      steps:
+      - log:
+          message: "Received from kafka:chuck: ${body}"
+- route:
+    id: route4
+    from:
+      uri: kafka:other
+      steps:
+      - log:
+          message: "Received from kafka:other: ${body}"
